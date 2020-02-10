@@ -12,6 +12,10 @@ export interface ISwitchProps extends ViewProps {
   value: boolean
   disabled?: boolean
   onValueChange(value: boolean): any
+  onRef?(value: any): any
+  contentView?: any
+  contentStyle?: any
+  thumbView?: any
 }
 
 export const defaultProps = {

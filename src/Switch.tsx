@@ -60,7 +60,9 @@ export default class Switch extends Component<ISwitchProps> {
       ]),
       onPanResponderRelease: this.onCircleTapOut,
     })
-
+    if (typeof this.props.onRef === 'function') {
+      this.props.onRef(this)
+    }
     this.toggle(value)
   }
 
@@ -82,20 +84,8 @@ export default class Switch extends Component<ISwitchProps> {
     Animated.timing(this.circleAnimations.size, animationConfigs(true)).start()
 
   onCircleTapOut = () => {
-    // Hacky way to get the Animated.Value as a number in TS
     const direction = (this.circleAnimations.direction as any)._value
-
-    // If Circle didn't move, meaning user simply tapped on it
-    // without dragging, then treat it as onPress()
-    if (
-      Math.abs(direction) < 1 ||
-      this.circleAnimations.prevDirection === direction
-    ) {
-      return this.toggle(!this.props.value)
-    }
-
-    const isGoingLeft =
-      (direction < 0 ? this.boundary : 0) + direction < this.boundary / 2
+    const isGoingLeft = direction > 0 ? !(direction > this.boundary / 2) : true
     const toValue = (isGoingLeft ? -1 : 1) * this.boundary
 
     Animated.parallel([
@@ -112,8 +102,6 @@ export default class Switch extends Component<ISwitchProps> {
     }
   }
 
-  onBackgroundPress = () => this.toggle(!this.props.value)
-
   toggle = (newValue: boolean) => {
     const toValue = (newValue ? 1 : -1) * this.boundary
     return Animated.parallel([
@@ -128,6 +116,9 @@ export default class Switch extends Component<ISwitchProps> {
       circleStyle = {},
       backgroundColor,
       circleColor,
+      contentView,
+      contentStyle,
+      thumbView,
       activeColor,
       disabledColor,
       width,
@@ -157,25 +148,26 @@ export default class Switch extends Component<ISwitchProps> {
           },
         ]}
       >
-        <TouchableWithoutFeedback onPress={this.onBackgroundPress}>
-          <Animated.View
-            style={[
-              styles.activeBackground,
-              {
-                backgroundColor: disabled ? disabledColor : activeColor,
-                borderRadius: height,
-                opacity: Animated.divide(
-                  circlePosition,
-                  this.boundary,
-                ).interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0, 1],
-                  extrapolate: 'clamp',
-                }),
-              },
-            ]}
-          />
-        </TouchableWithoutFeedback>
+        <Animated.View
+          style={[
+            styles.activeBackground,
+            {
+              backgroundColor: disabled ? disabledColor : activeColor,
+              borderRadius: height,
+              ...contentStyle,
+              opacity: Animated.divide(
+                circlePosition,
+                this.boundary,
+              ).interpolate({
+                inputRange: [0, 1],
+                outputRange: [1, 0],
+                extrapolate: 'clamp',
+              }),
+            },
+          ]}
+        >
+          {contentView}
+        </Animated.View>
 
         <Animated.View
           {...this.panResponder.panHandlers}
@@ -203,7 +195,9 @@ export default class Switch extends Component<ISwitchProps> {
               ],
             },
           ]}
-        />
+        >
+          {thumbView}
+        </Animated.View>
       </View>
     )
   }
